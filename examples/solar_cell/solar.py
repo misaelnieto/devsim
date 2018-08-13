@@ -201,11 +201,14 @@ def beer_lambert_model(device, region, light_source, axis='x'):
     # will need to each have a "node_model" accounting for the net generation.
 
     # Total photogeneration for each node
-    # Conditions:
-    #   100% quantum efficiency
-    #   Ignores reflection
-    ds.register_function(name='beer_lambert', nargs=1)
-    model_create.CreateNodeModel(device=device, region=region, name='Photons')
+    # Assuming 100% quantum efficiency
+    # Ignores reflection
+    model_create.CreateNodeModel(
+        device=device, region=region, name='Photons', expression='0'
+    )
+    model_create.CreateNodeModel(
+        device=device, region=region, name='Photons', expression='0'
+    )
     pgen_by_node = np.add.reduce(pg, 1)
     for i, v in enumerate(pgen_by_node):
         ds.set_node_value(
@@ -213,5 +216,17 @@ def beer_lambert_model(device, region, light_source, axis='x'):
             region=region,
             name='Photons',
             index=i,
-            value=float(v)
+            value=float(v)/2
         )
+
+    # USRH="(Electrons*Holes - n_i^2)/(taup*(Electrons + n1) + taun*(Holes + p1))"
+    # Gn = "-ElectronCharge * (USRH + Photons)"
+    # Gp = "+ElectronCharge * (USRH + Photons)"
+    # CreateNodeModel(device, region, "USRH", USRH)
+    # CreateNodeModel(device, region, "ElectronGeneration", Gn)
+    # CreateNodeModel(device, region, "HoleGeneration", Gp)
+    # for i in ("Electrons", "Holes"):
+    #     CreateNodeModelDerivative(device, region, "USRH", USRH, i)
+    #     CreateNodeModelDerivative(device, region, "ElectronGeneration", Gn, i)
+    #     CreateNodeModelDerivative(device, region, "HoleGeneration", Gp, i)
+
