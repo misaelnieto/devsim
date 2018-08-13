@@ -203,12 +203,7 @@ def beer_lambert_model(device, region, light_source, axis='x'):
     # Total photogeneration for each node
     # Assuming 100% quantum efficiency
     # Ignores reflection
-    model_create.CreateNodeModel(
-        device=device, region=region, name='Photons', expression='0'
-    )
-    model_create.CreateNodeModel(
-        device=device, region=region, name='Photons', expression='0'
-    )
+    ds.node_solution(name='Photons', device=device, region=region)
     pgen_by_node = np.add.reduce(pg, 1)
     for i, v in enumerate(pgen_by_node):
         ds.set_node_value(
@@ -216,17 +211,18 @@ def beer_lambert_model(device, region, light_source, axis='x'):
             region=region,
             name='Photons',
             index=i,
-            value=float(v)/2
+            # value=float(v)
+            value=1e15
         )
 
-    # USRH="(Electrons*Holes - n_i^2)/(taup*(Electrons + n1) + taun*(Holes + p1))"
-    # Gn = "-ElectronCharge * (USRH + Photons)"
-    # Gp = "+ElectronCharge * (USRH + Photons)"
-    # CreateNodeModel(device, region, "USRH", USRH)
-    # CreateNodeModel(device, region, "ElectronGeneration", Gn)
-    # CreateNodeModel(device, region, "HoleGeneration", Gp)
-    # for i in ("Electrons", "Holes"):
-    #     CreateNodeModelDerivative(device, region, "USRH", USRH, i)
-    #     CreateNodeModelDerivative(device, region, "ElectronGeneration", Gn, i)
-    #     CreateNodeModelDerivative(device, region, "HoleGeneration", Gp, i)
+    USRH="(Electrons*Holes - n_i^2)/(taup*(Electrons + n1) + taun*(Holes + p1))"
+    Gn = "-ElectronCharge * (USRH + Photons)"
+    Gp = "+ElectronCharge * (USRH + Photons)"
+    model_create.CreateNodeModel(device, region, "USRH", USRH)
+    model_create.CreateNodeModel(device, region, "ElectronGeneration", Gn)
+    model_create.CreateNodeModel(device, region, "HoleGeneration", Gp)
+    for i in ("Electrons", "Holes"):
+        model_create.CreateNodeModelDerivative(device, region, "USRH", USRH, i)
+        model_create.CreateNodeModelDerivative(device, region, "ElectronGeneration", Gn, i)
+        model_create.CreateNodeModelDerivative(device, region, "HoleGeneration", Gp, i)
 
